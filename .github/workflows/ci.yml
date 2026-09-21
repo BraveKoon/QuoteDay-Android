@@ -93,6 +93,24 @@ jobs:
           set -o pipefail
           ./gradlew :app:assembleRelease --console=plain 2>&1 | tee -a build.log
 
+      # 개인정보 처리방침(docs/PRIVACY.md)은 이 앱이 네트워크를 쓰지 않는다고
+      # 적고 있다. 그 문장이 사실인지는 **합쳐진** 매니페스트를 봐야 안다 —
+      # 우리가 적지 않아도 의존성이 권한을 들고 들어올 수 있다. 사실과 다른
+      # 방침은 심사에 걸리기 전에 사용자를 속인다.
+      - name: 권한이 방침과 맞는지 확인
+        run: |
+          MANIFEST=$(find app/build/intermediates -name AndroidManifest.xml -path '*merged_manifest*release*' | head -1)
+          if [ -z "$MANIFEST" ]; then
+            echo '합쳐진 매니페스트를 찾지 못했습니다.' >&2
+            exit 1
+          fi
+          echo "매니페스트: $MANIFEST"
+          grep -o 'android:name="android.permission.[^"]*"' "$MANIFEST" | sort -u
+          if grep -q 'android.permission.INTERNET' "$MANIFEST"; then
+            echo '::error::INTERNET 권한이 들어왔습니다. docs/PRIVACY.md 의 "외부로 나가는 요청: 없습니다" 가 더 이상 사실이 아닙니다.' >&2
+            exit 1
+          fi
+
       - name: APK 올리기
         uses: actions/upload-artifact@v4
         with:

@@ -39,9 +39,14 @@ jobs:
         if: failure()
         run: |
           echo '=== 컴파일 오류 ==='
-          grep -nE "^e: |error:" build.log | head -40 || echo '(없음)'
+          grep -E "^e: |error:" build.log | head -40 || echo '(없음)'
           echo '=== Gradle 이 말한 것 ==='
-          sed -n '/FAILURE: Build failed/,/^\* Try:/p' build.log | head -40
+          # 의존성 나열(:app:debugRuntimeClasspath -> ...)은 수백 줄씩 나오면서
+          # 정작 원인은 그 위에 한두 줄로 적혀 있다. 나열을 걷어 내고 앞부분만 본다.
+          grep -v 'RuntimeClasspath ->' build.log \
+            | grep -v 'CompileClasspath ->' \
+            | sed -n '/\* What went wrong:/,/^\* Try:/p' \
+            | head -30
 
       - name: 테스트 리포트 올리기
         if: failure()
@@ -85,9 +90,14 @@ jobs:
         if: failure()
         run: |
           echo '=== 컴파일 오류 ==='
-          grep -nE "^e: |error:" build.log | head -40 || echo '(없음)'
+          grep -E "^e: |error:" build.log | head -40 || echo '(없음)'
           echo '=== Gradle 이 말한 것 ==='
-          sed -n '/FAILURE: Build failed/,/^\* Try:/p' build.log | head -40
+          # 의존성 나열(:app:debugRuntimeClasspath -> ...)은 수백 줄씩 나오면서
+          # 정작 원인은 그 위에 한두 줄로 적혀 있다. 나열을 걷어 내고 앞부분만 본다.
+          grep -v 'RuntimeClasspath ->' build.log \
+            | grep -v 'CompileClasspath ->' \
+            | sed -n '/\* What went wrong:/,/^\* Try:/p' \
+            | head -30
 
       - name: APK 올리기
         uses: actions/upload-artifact@v4

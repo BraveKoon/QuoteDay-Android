@@ -49,7 +49,12 @@ jobs:
           distribution: temurin
           java-version: '21'
 
+      # packages 를 비워 둔다. 기본값에는 폐기된 'tools' 패키지가 들어 있어
+      # sdkmanager 가 "Failed to find package 'tools'" 로 죽는다. 러너 이미지에
+      # 이미 SDK 가 있으므로 이 액션은 ANDROID_HOME 을 잡아 주기만 하면 된다.
       - uses: android-actions/setup-android@v3
+        with:
+          packages: ''
 
       - uses: gradle/actions/setup-gradle@v4
 

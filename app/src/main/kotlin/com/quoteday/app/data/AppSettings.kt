@@ -16,6 +16,11 @@ import com.quoteday.core.AppCategory
  *
  * 키 문자열은 iOS 와 같은 것을 쓴다. 두 앱이 같은 저장소를 공유하지는 않지만,
  * 한쪽을 고칠 때 다른 쪽에서 같은 이름을 찾을 수 있어야 한다.
+ *
+ * 값마다 **private 상태 + 공개 프로퍼티** 한 쌍으로 두었다. Compose 가 다시
+ * 그리도록 상태가 필요하고, 저장은 세터가 맡는다. `var x by mutableStateOf(...)
+ * private set` 옆에 `fun setX(...)` 를 두는 모양은 쓸 수 없다 — 둘 다 JVM 에서
+ * `setX` 가 되어 "Platform declaration clash" 로 컴파일이 죽는다.
  */
 class AppSettings(context: Context) {
 
@@ -36,55 +41,67 @@ class AppSettings(context: Context) {
         }
     }
 
-    // Compose 가 다시 그리도록 상태로 들고, 쓸 때 곧바로 저장한다.
-    var dailyQuoteEnabled: Boolean by mutableStateOf(prefs.getBoolean(DAILY_ENABLED, false))
-        private set
-    var dailyQuoteHour: Int by mutableStateOf(prefs.getInt(DAILY_HOUR, 8))
-        private set
-    var dailyQuoteMinute: Int by mutableStateOf(prefs.getInt(DAILY_MINUTE, 0))
-        private set
-    var preferredCategory: AppCategory? by mutableStateOf(
+    private var dailyQuoteEnabledState by mutableStateOf(prefs.getBoolean(DAILY_ENABLED, false))
+    private var dailyQuoteHourState by mutableStateOf(prefs.getInt(DAILY_HOUR, 8))
+    private var dailyQuoteMinuteState by mutableStateOf(prefs.getInt(DAILY_MINUTE, 0))
+    private var preferredCategoryState by mutableStateOf(
         prefs.getString(PREFERRED_CATEGORY, null)?.let { stored ->
             AppCategory.entries.firstOrNull { it.rawValue == stored }
         }
     )
-        private set
-    var appearance: Appearance by mutableStateOf(Appearance.from(prefs.getString(APPEARANCE, null)))
-        private set
-    var hasAskedForNotifications: Boolean by mutableStateOf(prefs.getBoolean(ASKED_NOTIFICATIONS, false))
-        private set
+    private var appearanceState by mutableStateOf(Appearance.from(prefs.getString(APPEARANCE, null)))
+    private var hasAskedForNotificationsState by mutableStateOf(
+        prefs.getBoolean(ASKED_NOTIFICATIONS, false)
+    )
 
-    fun setDailyQuoteEnabled(value: Boolean) {
-        dailyQuoteEnabled = value
-        prefs.edit().putBoolean(DAILY_ENABLED, value).apply()
-    }
+    var dailyQuoteEnabled: Boolean
+        get() = dailyQuoteEnabledState
+        set(value) {
+            dailyQuoteEnabledState = value
+            prefs.edit().putBoolean(DAILY_ENABLED, value).apply()
+        }
 
+    val dailyQuoteHour: Int get() = dailyQuoteHourState
+    val dailyQuoteMinute: Int get() = dailyQuoteMinuteState
+
+    /** 시와 분은 늘 함께 바뀌므로 하나로 묶어 둔다. */
     fun setDailyQuoteTime(hour: Int, minute: Int) {
-        dailyQuoteHour = hour.coerceIn(0, 23)
-        dailyQuoteMinute = minute.coerceIn(0, 59)
+        dailyQuoteHourState = hour.coerceIn(0, 23)
+        dailyQuoteMinuteState = minute.coerceIn(0, 59)
         prefs.edit()
-            .putInt(DAILY_HOUR, dailyQuoteHour)
-            .putInt(DAILY_MINUTE, dailyQuoteMinute)
+            .putInt(DAILY_HOUR, dailyQuoteHourState)
+            .putInt(DAILY_MINUTE, dailyQuoteMinuteState)
             .apply()
     }
 
     /** null 은 "카테고리를 가리지 않음"이다. */
-    fun setPreferredCategory(value: AppCategory?) {
-        preferredCategory = value
-        prefs.edit().apply {
-            if (value == null) remove(PREFERRED_CATEGORY) else putString(PREFERRED_CATEGORY, value.rawValue)
-        }.apply()
-    }
+    var preferredCategory: AppCategory?
+        get() = preferredCategoryState
+        set(value) {
+            preferredCategoryState = value
+            prefs.edit().apply {
+                if (value == null) {
+                    remove(PREFERRED_CATEGORY)
+                } else {
+                    putString(PREFERRED_CATEGORY, value.rawValue)
+                }
+            }.apply()
+        }
 
-    fun setAppearance(value: Appearance) {
-        appearance = value
-        prefs.edit().putString(APPEARANCE, value.rawValue).apply()
-    }
+    var appearance: Appearance
+        get() = appearanceState
+        set(value) {
+            appearanceState = value
+            prefs.edit().putString(APPEARANCE, value.rawValue).apply()
+        }
 
-    fun markNotificationsAsked() {
-        hasAskedForNotifications = true
-        prefs.edit().putBoolean(ASKED_NOTIFICATIONS, true).apply()
-    }
+    /** 알림 권한을 이미 물어봤는지. 같은 것을 두 번 묻지 않으려고 남긴다. */
+    var hasAskedForNotifications: Boolean
+        get() = hasAskedForNotificationsState
+        set(value) {
+            hasAskedForNotificationsState = value
+            prefs.edit().putBoolean(ASKED_NOTIFICATIONS, value).apply()
+        }
 
     companion object {
         const val STORE_NAME = "quoteday.settings"

@@ -57,7 +57,7 @@ fun SettingsScreen(app: QuoteDayApplication) {
                         } else {
                             colors.textSecondary
                         },
-                        onClick = { settings.setPreferredCategory(null) },
+                        onClick = { settings.preferredCategory = null },
                     )
                     for (category in AppCategory.selectableForQuotes) {
                         val isOn = settings.preferredCategory == category
@@ -65,7 +65,7 @@ fun SettingsScreen(app: QuoteDayApplication) {
                             text = category.displayName,
                             tint = if (isOn) colors.tint(category) else colors.surfaceRaised,
                             textColor = if (isOn) colors.textOnTint else colors.textSecondary,
-                            onClick = { settings.setPreferredCategory(if (isOn) null else category) },
+                            onClick = { settings.preferredCategory = if (isOn) null else category },
                         )
                     }
                 }
@@ -81,7 +81,7 @@ fun SettingsScreen(app: QuoteDayApplication) {
                             text = appearance.title,
                             tint = if (isOn) colors.accent else colors.surfaceRaised,
                             textColor = if (isOn) colors.textOnAccent else colors.textSecondary,
-                            onClick = { settings.setAppearance(appearance) },
+                            onClick = { settings.appearance = appearance },
                         )
                     }
                 }

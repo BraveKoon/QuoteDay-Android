@@ -33,8 +33,15 @@ jobs:
           set -o pipefail
           ./gradlew :core:test --console=plain 2>&1 | tee build.log
 
-      # Gradle 의 실패 출력은 수천 줄짜리 의존성 나열로 끝나는 일이 많아서,
-      # 로그 끝만 봐서는 무엇이 틀렸는지 알 수 없다. 필요한 줄만 마지막에 다시 찍는다.
+      - name: 테스트 리포트 올리기
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-test-report
+          path: core/build/reports/tests/test
+
+      # 요약은 잡의 **맨 마지막**에 둔다. Gradle 의 실패 출력은 수천 줄로 끝나는
+      # 일이 많아서, 요약이 중간에 있으면 로그 끝을 봐도 보이지 않는다.
       - name: 실패한 곳만 추리기
         if: failure()
         run: |
@@ -47,13 +54,6 @@ jobs:
             | grep -v 'CompileClasspath ->' \
             | sed -n '/\* What went wrong:/,/^\* Try:/p' \
             | head -30
-
-      - name: 테스트 리포트 올리기
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: core-test-report
-          path: core/build/reports/tests/test
 
   app:
     name: :app 빌드
@@ -85,20 +85,6 @@ jobs:
           set -o pipefail
           ./gradlew :app:lintDebug --console=plain 2>&1 | tee -a build.log
 
-      # 위 :core 잡과 같은 이유다.
-      - name: 실패한 곳만 추리기
-        if: failure()
-        run: |
-          echo '=== 컴파일 오류 ==='
-          grep -E "^e: |error:" build.log | head -40 || echo '(없음)'
-          echo '=== Gradle 이 말한 것 ==='
-          # 의존성 나열(:app:debugRuntimeClasspath -> ...)은 수백 줄씩 나오면서
-          # 정작 원인은 그 위에 한두 줄로 적혀 있다. 나열을 걷어 내고 앞부분만 본다.
-          grep -v 'RuntimeClasspath ->' build.log \
-            | grep -v 'CompileClasspath ->' \
-            | sed -n '/\* What went wrong:/,/^\* Try:/p' \
-            | head -30
-
       - name: APK 올리기
         uses: actions/upload-artifact@v4
         with:
@@ -111,3 +97,18 @@ jobs:
         with:
           name: lint-report
           path: app/build/reports
+
+      # 요약은 잡의 **맨 마지막**에 둔다. Gradle 의 실패 출력은 수천 줄로 끝나는
+      # 일이 많아서, 요약이 중간에 있으면 로그 끝을 봐도 보이지 않는다.
+      - name: 실패한 곳만 추리기
+        if: failure()
+        run: |
+          echo '=== 컴파일 오류 ==='
+          grep -E "^e: |error:" build.log | head -40 || echo '(없음)'
+          echo '=== Gradle 이 말한 것 ==='
+          # 의존성 나열(:app:debugRuntimeClasspath -> ...)은 수백 줄씩 나오면서
+          # 정작 원인은 그 위에 한두 줄로 적혀 있다. 나열을 걷어 내고 앞부분만 본다.
+          grep -v 'RuntimeClasspath ->' build.log \
+            | grep -v 'CompileClasspath ->' \
+            | sed -n '/\* What went wrong:/,/^\* Try:/p' \
+            | head -30

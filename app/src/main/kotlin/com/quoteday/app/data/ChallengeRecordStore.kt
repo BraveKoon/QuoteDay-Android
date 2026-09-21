@@ -6,6 +6,8 @@ import com.quoteday.core.ChallengeDifficulty
 import com.quoteday.core.ChallengeMode
 import com.quoteday.core.ChallengeResult
 import com.quoteday.core.ChallengeScore
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 
 /**
@@ -25,7 +27,7 @@ class ChallengeRecordStore(context: Context) {
 
     private val records = mutableStateMapOf<String, Int>().apply {
         val stored = prefs.getString(RECORDS, null) ?: return@apply
-        runCatching { json.decodeFromString<Map<String, Int>>(stored) }
+        runCatching { json.decodeFromString(recordSerializer, stored) }
             .getOrNull()
             ?.let { putAll(it) }
     }
@@ -57,7 +59,7 @@ class ChallengeRecordStore(context: Context) {
     }
 
     private fun persist() {
-        prefs.edit().putString(RECORDS, json.encodeToString(records.toMap())).apply()
+        prefs.edit().putString(RECORDS, json.encodeToString(recordSerializer, records.toMap())).apply()
     }
 
     private fun key(mode: ChallengeMode, difficulty: ChallengeDifficulty): String =
@@ -67,5 +69,15 @@ class ChallengeRecordStore(context: Context) {
         const val STORE_NAME = "quoteday.challenge"
         private const val RECORDS = "challenge.records.v1"
         private val json = Json { ignoreUnknownKeys = true }
+
+        /**
+         * 직렬화기를 손으로 지정한다.
+         *
+         * `json.encodeToString(맵)` 처럼 부르면 `encodeToString(직렬화기, 값)` 쪽으로
+         * 붙어 버려서 "No value passed for parameter 'value'" 로 죽는다. 타입만 보고
+         * 알아서 찾아 주는 쪽은 별도 확장 함수라 import 가 필요하고, 그것이 빠졌는지
+         * 여부가 컴파일 오류로만 드러난다. 이렇게 적어 두면 헷갈릴 일이 없다.
+         */
+        private val recordSerializer = MapSerializer(String.serializer(), Int.serializer())
     }
 }

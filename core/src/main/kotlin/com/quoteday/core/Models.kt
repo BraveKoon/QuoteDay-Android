@@ -111,8 +111,14 @@ data class Author(
     val era: String? = null,
     val notableWorks: List<String> = emptyList(),
 ) {
-    /** 화면에 크게 쓰는 이름. 영문이 기준이고 한국어는 아래에 작게 붙인다. */
-    val displayName: String get() = name
+    /**
+     * 화면과 보기에 쓰는 이름. 한국어 표기가 있으면 그쪽이다.
+     *
+     * iOS 와 같은 규칙을 써야 한다. 챌린지의 "누가 말했을까"는 이 값을 보기로
+     * 늘어놓는데, 한쪽은 "윈스턴 처칠", 다른 쪽은 "Winston Churchill" 이면
+     * 같은 앱이 플랫폼마다 다른 문제를 내는 꼴이 된다.
+     */
+    val displayName: String get() = koreanName ?: name
 
     val lifespan: String?
         get() = when {

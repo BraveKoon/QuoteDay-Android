@@ -1,0 +1,80 @@
+name: 릴리스 AAB
+
+# 손으로 돌린다. 태그를 밀 때마다 스토어용 파일이 생기면, 올릴 생각이 없던
+# 빌드가 쌓이면서 어느 것을 올렸는지 헷갈린다.
+on:
+  workflow_dispatch:
+    inputs:
+      versionName:
+        description: '버전 이름 (예: 1.0.0). 비우면 build.gradle.kts 의 값을 쓴다.'
+        required: false
+      versionCode:
+        description: '버전 코드 (정수). 비우면 build.gradle.kts 의 값을 쓴다.'
+        required: false
+
+jobs:
+  bundle:
+    name: AAB 만들기
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: ''
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # 키스토어는 base64 로 넣어 둔 저장소 시크릿에서 꺼낸다.
+      # 만드는 법과 넣는 법은 README 의 "안드로이드 출시" 절을 보라.
+      - name: 키스토어 꺼내기
+        env:
+          KEYSTORE_BASE64: ${{ secrets.QUOTEDAY_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "QUOTEDAY_KEYSTORE_BASE64 시크릿이 없습니다. 서명 없이는 스토어에 올릴 수 없습니다." >&2
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/quoteday.jks"
+
+      - name: 번들
+        env:
+          QUOTEDAY_STORE_FILE: ${{ runner.temp }}/quoteday.jks
+          QUOTEDAY_STORE_PASSWORD: ${{ secrets.QUOTEDAY_STORE_PASSWORD }}
+          QUOTEDAY_KEY_ALIAS: ${{ secrets.QUOTEDAY_KEY_ALIAS }}
+          QUOTEDAY_KEY_PASSWORD: ${{ secrets.QUOTEDAY_KEY_PASSWORD }}
+        run: |
+          set -o pipefail
+          ARGS=""
+          if [ -n "${{ inputs.versionName }}" ]; then ARGS="$ARGS -PversionName=${{ inputs.versionName }}"; fi
+          if [ -n "${{ inputs.versionCode }}" ]; then ARGS="$ARGS -PversionCode=${{ inputs.versionCode }}"; fi
+          ./gradlew :app:bundleRelease $ARGS --console=plain 2>&1 | tee build.log
+
+      - name: AAB 올리기
+        uses: actions/upload-artifact@v4
+        with:
+          name: quoteday-release-aab
+          path: app/build/outputs/bundle/release/*.aab
+
+      - name: 매핑 파일 올리기
+        uses: actions/upload-artifact@v4
+        with:
+          name: quoteday-release-mapping
+          path: app/build/outputs/mapping/release/mapping.txt
+          if-no-files-found: warn
+
+      - name: 실패한 곳만 추리기
+        if: failure()
+        run: |
+          echo '=== 컴파일 오류 ==='
+          grep -E "^e: |error:" build.log | head -40 || echo '(없음)'
+          echo '=== Gradle 이 말한 것 ==='
+          grep -v 'RuntimeClasspath ->' build.log \
+            | grep -v 'CompileClasspath ->' \
+            | sed -n '/\* What went wrong:/,/^\* Try:/p' \
+            | head -30

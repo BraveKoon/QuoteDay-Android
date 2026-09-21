@@ -47,8 +47,9 @@ gradle :core:test
 - [x] 일정 — 반복 규칙, 회차 계산, 검증
 - [x] `:app` — 오늘 · 일정 · 명언 · 챌린지 · 설정 화면
 - [x] 알림 — 일정 회차와 매일 정해진 시각
-- [x] CI — `:core` 테스트와 `:app` 디버그 APK
-- [ ] 위젯(Glance)
+- [x] 위젯 — 홈 화면의 오늘의 명언
+- [x] CI — `:core` 테스트, `:app` 디버그 APK, 릴리스 빌드
+- [x] 릴리스 워크플로 — 서명된 AAB
 - [ ] 하트 서버 (지금은 기기 안에만 쌓인다)
 - [ ] 랭킹
 
@@ -64,3 +65,58 @@ iOS 는 하트를 CloudKit 공개 데이터베이스에 넣는다. **안드로�
 보도록 한다.
 
 랭킹은 이번 버전에 넣지 않는다.
+
+## 안드로이드 출시
+
+### 1. 키스토어 만들기
+
+한 번 만들면 **그 앱의 평생 신분증**이다. 잃어버리면 같은 앱의 업데이트를 낼 수
+없다(Play 앱 서명을 쓰면 복구 경로가 있지만, 업로드 키를 다시 등록해야 한다).
+저장소에 커밋하지 말고, 따로 안전한 곳에 보관한다.
+
+```bash
+keytool -genkeypair -v \
+  -keystore quoteday.jks \
+  -alias quoteday \
+  -keyalg RSA -keysize 2048 -validity 10000
+```
+
+### 2. 저장소 시크릿에 넣기
+
+`Settings → Secrets and variables → Actions` 에 네 개를 만든다.
+
+    QUOTEDAY_KEYSTORE_BASE64   base64 -w0 quoteday.jks 의 출력
+    QUOTEDAY_STORE_PASSWORD    키스토어 비밀번호
+    QUOTEDAY_KEY_ALIAS         quoteday
+    QUOTEDAY_KEY_PASSWORD      키 비밀번호
+
+로컬에서 서명해 보려면 `keystore.properties` 를 저장소 뿌리에 두면 된다
+(gitignore 되어 있다).
+
+    storeFile=/절대/경로/quoteday.jks
+    storePassword=...
+    keyAlias=quoteday
+    keyPassword=...
+
+### 3. AAB 만들기
+
+Actions → **릴리스 AAB** → Run workflow. 버전을 비워 두면 `build.gradle.kts` 의
+값을 쓴다. 스토어는 같은 `versionCode` 를 두 번 받지 않으므로 올릴 때마다 올린다.
+
+산출물 두 개가 나온다.
+
+    quoteday-release-aab       Play Console 에 올리는 파일
+    quoteday-release-mapping   난독화 해제용. 크래시 리포트를 읽으려면 함께 올린다.
+
+### 4. Play Console
+
+1. 개발자 계정 등록(1회, 25달러)
+2. 앱 만들기 → 이름 "오늘의 명언", 언어 한국어, 무료
+3. 앱 콘텐츠 — 개인정보처리방침 URL, 데이터 보안 설문, 광고 없음, 콘텐츠 등급
+4. 프로덕션 → 새 버전 → AAB 업로드 → 출시 노트
+5. 심사 (보통 며칠)
+
+개인정보처리방침은 iOS 저장소의 `docs/PRIVACY.md` 를 그대로 쓸 수 있다. 다만
+**하트가 어디에 쌓이는지**가 두 플랫폼에서 다르다 — 안드로이드판은 아직 기기
+안에만 쌓이므로, 그 문장은 고쳐야 한다.
+

@@ -9,3 +9,9 @@ captures/
 
 # Android
 /app/build/
+
+# 서명 정보는 절대 커밋하지 않는다. 키스토어가 새면 다른 사람이 이 앱의
+# 업데이트를 낼 수 있게 된다.
+keystore.properties
+*.jks
+*.keystore

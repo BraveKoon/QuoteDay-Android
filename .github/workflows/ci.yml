@@ -85,6 +85,13 @@ jobs:
           set -o pipefail
           ./gradlew :app:lintDebug --console=plain 2>&1 | tee -a build.log
 
+      # 릴리스 빌드는 R8 이 코드를 줄이고 이름을 바꾼다. 디버그에서는 멀쩡하던
+      # 직렬화가 여기서 깨지는 일이 흔해서, 서명 없이라도 여기서 한 번 짓는다.
+      - name: 릴리스 빌드 (서명 없음)
+        run: |
+          set -o pipefail
+          ./gradlew :app:assembleRelease --console=plain 2>&1 | tee -a build.log
+
       - name: APK 올리기
         uses: actions/upload-artifact@v4
         with:

@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">오늘의 명언</string>
+    <string name="widget_label">오늘의 명언</string>
 </resources>

@@ -1,8 +1,9 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    alias(libs.plugins.kotlin.jvm)
-    alias(libs.plugins.kotlin.serialization)
+    // 버전을 여기 적는 이유는 루트 build.gradle.kts 의 주석을 보라.
+    id("org.jetbrains.kotlin.jvm") version libs.versions.kotlin.get()
+    id("org.jetbrains.kotlin.plugin.serialization") version libs.versions.kotlin.get()
 }
 
 // 툴체인(jvmToolchain)을 쓰지 않는다. 이 저장소는 JDK 21 하나로 빌드하고,

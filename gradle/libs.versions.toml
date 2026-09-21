@@ -27,9 +27,6 @@ compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview"
 compose-material3 = { module = "androidx.compose.material3:material3" }
 compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
 
-[plugins]
-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-# AGP·kotlin-android·compose 플러그인은 여기에 두지 않는다. 루트에서 alias 로 선언하는 순간
-# Gradle 이 마커를 받으러 나가서, Android SDK 가 없는 환경의 :core:test 까지 같이 죽는다.
-# :app 이 자기 빌드 파일에서 `libs.versions.agp` 를 읽어 직접 선언한다.
+# [plugins] 섹션은 두지 않는다. alias 를 쓰려면 루트에서 선언해야 하는데, 루트는
+# 플러그인을 올리면 안 되는 자리다 — 루트 build.gradle.kts 의 주석을 보라.
+# 모듈이 `libs.versions.kotlin.get()` 처럼 [versions] 에서 버전만 읽어다 쓴다.

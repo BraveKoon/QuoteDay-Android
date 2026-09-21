@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    큰따옴표 두 개. 어댑티브 아이콘의 안전 영역(가운데 72dp) 안에 들어가도록
+    108dp 캔버스의 가운데에 그린다.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M36,38h14v14c0,9 -6,15 -14,17v-6c4,-2 7,-5 7,-9h-7z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M58,38h14v14c0,9 -6,15 -14,17v-6c4,-2 7,-5 7,-9h-7z" />
+</vector>

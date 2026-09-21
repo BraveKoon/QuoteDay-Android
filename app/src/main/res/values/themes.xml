@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Compose 가 화면을 다 그리므로 이 테마는 첫 프레임 전의 배경색만 정한다.
+        이 값이 ClayTheme.background 와 다르면 앱을 열 때 한 번 번쩍인다.
+    -->
+    <style name="Theme.QuoteDay" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/clay_background</item>
+        <item name="android:statusBarColor">@color/clay_background</item>
+        <item name="android:navigationBarColor">@color/clay_background</item>
+    </style>
+</resources>

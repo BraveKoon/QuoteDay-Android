@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# 이 워크플로가 하는 일은 하나다 — **안드로이드 컴파일러 노릇**.
+# 개발 컨테이너에는 Android SDK 가 없어서 `:app` 을 그곳에서 빌드할 수 없다.
+# `:core` 는 어디서나 빌드되므로 그쪽 테스트가 먼저, 빠르게 돈다.
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core:
+    name: :core 테스트
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: 테스트
+        run: ./gradlew :core:test
+
+      - name: 테스트 리포트 올리기
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-test-report
+          path: core/build/reports/tests/test
+
+  app:
+    name: :app 빌드
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: 디버그 APK
+        run: ./gradlew :app:assembleDebug
+
+      - name: 린트
+        run: ./gradlew :app:lintDebug
+
+      - name: APK 올리기
+        uses: actions/upload-artifact@v4
+        with:
+          name: quoteday-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+
+      - name: 린트 리포트 올리기
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-report
+          path: app/build/reports

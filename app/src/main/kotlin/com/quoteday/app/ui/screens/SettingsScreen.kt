@@ -13,8 +13,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import com.quoteday.app.QuoteDayApplication
 import com.quoteday.app.data.AppSettings
 import com.quoteday.app.ui.ClayCard
@@ -24,12 +30,24 @@ import com.quoteday.app.ui.ClaySpacing
 import com.quoteday.app.ui.ClayTheme
 import com.quoteday.app.ui.TAB_BAR_INSET
 import com.quoteday.core.AppCategory
+import android.app.TimePickerDialog
+import android.os.Build
 
 /** 설정. */
 @Composable
 fun SettingsScreen(app: QuoteDayApplication) {
     val colors = ClayTheme.colors
     val settings = app.settings
+    val context = LocalContext.current
+
+    // 안드로이드 13부터 알림은 따로 허락받아야 한다. 허락 여부와 상관없이
+    // "물어봤다"는 사실을 남겨, 거절한 사람에게 같은 것을 다시 묻지 않는다.
+    val askForNotifications = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        settings.hasAskedForNotifications = true
+        if (granted) app.notifications.reschedule()
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().statusBarsPadding(),
@@ -68,6 +86,65 @@ fun SettingsScreen(app: QuoteDayApplication) {
                             onClick = { settings.preferredCategory = if (isOn) null else category },
                         )
                     }
+                }
+            }
+        }
+
+        item {
+            SettingsSection(
+                title = "매일 알림",
+                detail = "정한 시각에 그날의 명언을 보냅니다.",
+            ) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "%02d:%02d".format(settings.dailyQuoteHour, settings.dailyQuoteMinute),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = colors.textPrimary,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Switch(
+                        checked = settings.dailyQuoteEnabled,
+                        onCheckedChange = { isOn ->
+                            settings.dailyQuoteEnabled = isOn
+                            if (isOn && !app.notifications.hasPermission() &&
+                                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                            ) {
+                                askForNotifications.launch(
+                                    android.Manifest.permission.POST_NOTIFICATIONS,
+                                )
+                            } else {
+                                app.notifications.reschedule()
+                            }
+                        },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = colors.textOnAccent,
+                            checkedTrackColor = colors.accent,
+                        ),
+                    )
+                }
+
+                ClayChip(
+                    text = "시각 고치기",
+                    onClick = {
+                        TimePickerDialog(
+                            context,
+                            { _, hour, minute ->
+                                settings.setDailyQuoteTime(hour, minute)
+                                app.notifications.reschedule()
+                            },
+                            settings.dailyQuoteHour,
+                            settings.dailyQuoteMinute,
+                            true,
+                        ).show()
+                    },
+                )
+
+                if (!app.notifications.hasPermission()) {
+                    Text(
+                        "알림이 꺼져 있습니다. 기기 설정에서 이 앱의 알림을 켜 주세요.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colors.danger,
+                    )
                 }
             }
         }

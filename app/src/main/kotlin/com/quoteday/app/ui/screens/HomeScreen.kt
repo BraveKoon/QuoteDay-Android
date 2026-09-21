@@ -39,6 +39,7 @@ fun HomeScreen(
     app: QuoteDayApplication,
     onOpenQuote: (String) -> Unit,
     onOpenQuotes: () -> Unit,
+    onOpenSchedules: () -> Unit,
 ) {
     val colors = ClayTheme.colors
     val today = remember { LocalDate.now() }
@@ -93,6 +94,35 @@ fun HomeScreen(
         }
 
         item {
+            // 다음 일정. 없으면 카드를 그리지 않는다 — 빈 카드는 자리만 먹는다.
+            val next = app.schedules.nextOccurrence()
+            if (next != null) {
+                ClayCard(onClick = onOpenSchedules) {
+                    Column(
+                        Modifier.fillMaxWidth().padding(ClaySpacing.m),
+                        verticalArrangement = Arrangement.spacedBy(ClaySpacing.xs),
+                    ) {
+                        Text(
+                            "다음 일정",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = colors.textSecondary,
+                        )
+                        Text(
+                            next.displayTitle,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = colors.textPrimary,
+                        )
+                        Text(
+                            "${next.start.format(nextScheduleFormatter)} · ${next.category.displayName}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = colors.textSecondary,
+                        )
+                    }
+                }
+            }
+        }
+
+        item {
             Text(
                 "${presentation.quote.category.title} 이야기 더 보기",
                 style = MaterialTheme.typography.titleMedium,
@@ -126,6 +156,9 @@ fun HomeScreen(
 
 private val dateFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern("M월 d일 EEEE", Locale.KOREAN)
+
+private val nextScheduleFormatter: DateTimeFormatter =
+    DateTimeFormatter.ofPattern("M월 d일 a h:mm", Locale.KOREAN)
 
 internal fun greeting(time: LocalTime): String = when (time.hour) {
     in 5..10 -> "좋은 아침이에요"

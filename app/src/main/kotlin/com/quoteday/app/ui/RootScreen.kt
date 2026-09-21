@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.FormatQuote
 import androidx.compose.material.icons.filled.Settings
@@ -40,11 +41,13 @@ import com.quoteday.app.ui.screens.ChallengeScreen
 import com.quoteday.app.ui.screens.HomeScreen
 import com.quoteday.app.ui.screens.QuoteBrowserScreen
 import com.quoteday.app.ui.screens.QuoteDetailSheet
+import com.quoteday.app.ui.screens.ScheduleScreen
 import com.quoteday.app.ui.screens.SettingsScreen
 
-/** 아래 탭. iOS 의 다섯 탭에서 일정·캘린더를 뺀 것이다 — 그쪽은 아직 없다. */
+/** 아래 탭. */
 enum class AppTab(val title: String, val icon: ImageVector) {
     HOME("오늘", Icons.Filled.WbSunny),
+    SCHEDULE("일정", Icons.Filled.CalendarMonth),
     QUOTES("명언", Icons.Filled.FormatQuote),
     CHALLENGE("챌린지", Icons.Filled.EmojiEvents),
     SETTINGS("설정", Icons.Filled.Settings),
@@ -87,6 +90,11 @@ fun RootScreen(
                     app = app,
                     onOpenQuote = { presentedQuoteSlug = it },
                     onOpenQuotes = { tab = AppTab.QUOTES },
+                    onOpenSchedules = { tab = AppTab.SCHEDULE },
+                )
+                AppTab.SCHEDULE -> ScheduleScreen(
+                    app = app,
+                    onOpenQuote = { presentedQuoteSlug = it },
                 )
                 AppTab.QUOTES -> QuoteBrowserScreen(app = app, onOpenQuote = { presentedQuoteSlug = it })
                 AppTab.CHALLENGE -> ChallengeScreen(app = app)

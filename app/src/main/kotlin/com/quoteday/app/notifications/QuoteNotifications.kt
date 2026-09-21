@@ -213,7 +213,19 @@ class QuoteAlarmReceiver : android.content.BroadcastReceiver() {
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()
 
-        // 권한이 없으면 조용히 넘어간다. 여기서 죽으면 시스템이 앱을 문제 삼는다.
+        // 권한 확인은 이 자리에 그대로 적는다. 다른 함수로 빼면 린트가 따라가지
+        // 못해 MissingPermission 오류가 난다 — 그리고 그 경고는 옳다. 권한이
+        // 없는 채로 notify 를 부르면 아무 일도 일어나지 않는데, 그 사실이
+        // 어디에도 드러나지 않는다.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+
+        // 권한이 있어도 시스템 쪽 사정으로 실패할 수 있다. 여기서 죽으면
+        // 시스템이 앱을 문제 삼으므로 조용히 넘어간다.
         runCatching {
             NotificationManagerCompat.from(context).notify(slot, notification)
         }

@@ -45,15 +45,16 @@ jobs:
       - name: 실패한 곳만 추리기
         if: failure()
         run: |
-          echo '=== 컴파일 오류 ==='
-          grep -E "^e: |error:" build.log | head -40 || echo '(없음)'
           echo '=== Gradle 이 말한 것 ==='
           # 의존성 나열(:app:debugRuntimeClasspath -> ...)은 수백 줄씩 나오면서
           # 정작 원인은 그 위에 한두 줄로 적혀 있다. 나열을 걷어 내고 앞부분만 본다.
           grep -v 'RuntimeClasspath ->' build.log \
             | grep -v 'CompileClasspath ->' \
             | sed -n '/\* What went wrong:/,/^\* Try:/p' \
-            | head -30
+            | head -20
+          # 컴파일 오류가 맨 끝에 오도록 마지막에 찍는다. 로그 끝만 봐도 보이게.
+          echo '=== 컴파일 오류 ==='
+          grep -E "^e: |error:" build.log | tail -40 || echo '(없음)'
 
   app:
     name: :app 빌드
@@ -110,12 +111,13 @@ jobs:
       - name: 실패한 곳만 추리기
         if: failure()
         run: |
-          echo '=== 컴파일 오류 ==='
-          grep -E "^e: |error:" build.log | head -40 || echo '(없음)'
           echo '=== Gradle 이 말한 것 ==='
           # 의존성 나열(:app:debugRuntimeClasspath -> ...)은 수백 줄씩 나오면서
           # 정작 원인은 그 위에 한두 줄로 적혀 있다. 나열을 걷어 내고 앞부분만 본다.
           grep -v 'RuntimeClasspath ->' build.log \
             | grep -v 'CompileClasspath ->' \
             | sed -n '/\* What went wrong:/,/^\* Try:/p' \
-            | head -30
+            | head -20
+          # 컴파일 오류가 맨 끝에 오도록 마지막에 찍는다. 로그 끝만 봐도 보이게.
+          echo '=== 컴파일 오류 ==='
+          grep -E "^e: |error:" build.log | tail -40 || echo '(없음)'

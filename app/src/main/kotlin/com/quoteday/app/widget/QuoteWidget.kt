@@ -22,7 +22,9 @@ import androidx.glance.layout.padding
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import androidx.glance.unit.ColorProvider
+// 낮/밤 두 색을 받는 ColorProvider 는 androidx.glance.unit 이 아니라
+// androidx.glance.appwidget.unit 에 있다. 이름이 같아서 잘못 가져오기 쉽다.
+import androidx.glance.appwidget.unit.ColorProvider
 import androidx.compose.ui.unit.dp
 import com.quoteday.app.MainActivity
 import com.quoteday.app.data.AppSettings

@@ -34,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.quoteday.app.QuoteDayApplication
@@ -118,6 +119,9 @@ fun RootScreen(
     }
 }
 
+/** 계기 테스트가 탭을 집을 때 쓰는 이름. */
+fun tabTestTag(tab: AppTab): String = "tab-${tab.name}"
+
 @Composable
 private fun ClayTabBar(
     selected: AppTab,
@@ -152,6 +156,9 @@ private fun TabButton(
     val shape = RoundedCornerShape(ClayRadius.control)
     Column(
         modifier = modifier
+            // 탭 이름은 화면 제목과 같은 글자다("명언" 탭 / "명언" 제목).
+            // 계기 테스트가 둘을 구분할 수 있도록 태그를 붙인다.
+            .testTag(tabTestTag(tab))
             .clip(shape)
             .background(if (isSelected) colors.accent else colors.surface)
             .clickable(onClick = onClick)

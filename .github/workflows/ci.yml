@@ -180,7 +180,7 @@ jobs:
           profile: pixel_6
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
-          script: ./gradlew :app:connectedDebugAndroidTest --console=plain
+          script: ./gradlew :app:connectedDebugAndroidTest --console=plain 2>&1 | tee build.log
 
       - name: 결과 올리기
         if: always()
@@ -189,3 +189,15 @@ jobs:
           name: emulator-test-report
           path: app/build/reports/androidTests
           if-no-files-found: warn
+
+      # 앞의 두 잡과 같은 이유다 — 에뮬레이터 로그는 특히 길다.
+      - name: 실패한 곳만 추리기
+        if: failure()
+        run: |
+          echo '=== Gradle 이 말한 것 ==='
+          grep -v 'RuntimeClasspath ->' build.log 2>/dev/null \
+            | grep -v 'CompileClasspath ->' \
+            | sed -n '/\* What went wrong:/,/^\* Try:/p' \
+            | head -20 || echo '(build.log 없음)'
+          echo '=== 컴파일 오류 ==='
+          grep -E "^e: |error:" build.log 2>/dev/null | tail -40 || echo '(없음)'

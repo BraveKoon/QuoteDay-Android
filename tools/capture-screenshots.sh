@@ -19,7 +19,12 @@ REMOTE="/sdcard/Android/data/$PKG/files/screenshots"
   --console=plain
 
 echo "=== 기기에 찍힌 것 ==="
-adb shell ls -l "$REMOTE" || echo "(기기에 $REMOTE 가 없다)"
+# 폴더가 없으면 위 단계부터 보여 준다. 테스트가 아예 안 돌았는지, 돌았는데
+# 다른 곳에 썼는지 가려야 한다.
+adb shell ls -l "$REMOTE" || {
+  echo "(기기에 $REMOTE 가 없다)"
+  adb shell ls -l "/sdcard/Android/data/$PKG/files" || echo "(앱 외부 폴더 자체가 없다)"
+}
 
 # 폴더를 통째로 가져온다. 안에 docs/screenshots 가 생긴다.
 #

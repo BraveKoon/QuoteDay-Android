@@ -28,7 +28,12 @@ jobs:
         with:
           packages: ''
 
+      # 캐시를 끈다. 손으로 가끔 돌리는 잡이라 아껴지는 시간이 얼마 안 되는데,
+      # 그레이들 캐시 정리 로그가 잡 끝에 여든 줄씩 붙어서 실패 원인이 로그
+      # 꼬리에서 밀려난다. 원인을 못 읽으면 고칠 수가 없다.
       - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-disabled: true
 
       - name: KVM 열어 주기
         run: |
@@ -49,24 +54,6 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           script: bash tools/capture-screenshots.sh
-
-      # 에뮬레이터 잡의 원본 로그는 캐시 정리 소음이 뒤를 다 차지해서, 실패
-      # 원인이 로그 꼬리에 남지 않는다. 필요한 줄만 마지막에 다시 찍는다.
-      - name: 실패한 곳만 추리기
-        if: failure()
-        run: |
-          if [ ! -f build.log ]; then
-            echo '(build.log 가 없다 — 그레이들이 시작조차 못 했다)'
-            exit 0
-          fi
-          echo '=== Gradle 이 말한 것 ==='
-          sed -n '/\* What went wrong:/,/^\* Try:/p' build.log | head -20
-          echo '=== 테스트가 말한 것 ==='
-          grep -E "FAILED|junit|Exception|at com\\.quoteday" build.log | head -40
-          echo '=== 가져오기 ==='
-          sed -n '/=== 기기에 찍힌 것 ===/,$p' build.log | head -40
-          echo '=== 마지막 20줄 ==='
-          tail -20 build.log
 
       - name: 테스트 보고서 올리기
         if: failure()
@@ -102,3 +89,21 @@ jobs:
           에뮬레이터(pixel_2, API 34)에서 찍었다. 이 저장소에는 안드로이드 기기가
           없어서 화면을 눈으로 볼 방법이 이것뿐이다.'
           git push
+
+      # 잡의 맨 마지막에 둔다. 원본 로그는 길고, 뒤에서부터 읽는 자리에서는
+      # 앞쪽이 잘린다. 필요한 줄만 여기서 다시 찍는다.
+      - name: 실패한 곳만 추리기
+        if: failure()
+        run: |
+          if [ ! -f build.log ]; then
+            echo '(build.log 가 없다 — 그레이들이 시작조차 못 했다)'
+            exit 0
+          fi
+          echo '=== Gradle 이 말한 것 ==='
+          sed -n '/\* What went wrong:/,/^\* Try:/p' build.log | head -20
+          echo '=== 테스트가 말한 것 ==='
+          grep -E "FAILED|junit|Exception|at com\\.quoteday" build.log | head -40
+          echo '=== 가져오기 ==='
+          sed -n '/=== 기기에 찍힌 것 ===/,$p' build.log | head -40
+          echo '=== 마지막 20줄 ==='
+          tail -20 build.log

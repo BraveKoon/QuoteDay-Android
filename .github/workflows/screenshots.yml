@@ -55,14 +55,18 @@ jobs:
       - name: 실패한 곳만 추리기
         if: failure()
         run: |
+          if [ ! -f build.log ]; then
+            echo '(build.log 가 없다 — 그레이들이 시작조차 못 했다)'
+            exit 0
+          fi
           echo '=== Gradle 이 말한 것 ==='
-          sed -n '/\* What went wrong:/,/^\* Try:/p' build.log 2>/dev/null \
-            | head -20 || echo '(build.log 없음)'
+          sed -n '/\* What went wrong:/,/^\* Try:/p' build.log | head -20
           echo '=== 테스트가 말한 것 ==='
-          grep -E "FAILED|junit|Exception|at com\\.quoteday" build.log 2>/dev/null \
-            | head -40 || echo '(없음)'
-          echo '=== 컴파일 오류 ==='
-          grep -E "^e: |error:" build.log 2>/dev/null | tail -40 || echo '(없음)'
+          grep -E "FAILED|junit|Exception|at com\\.quoteday" build.log | head -40
+          echo '=== 가져오기 ==='
+          sed -n '/=== 기기에 찍힌 것 ===/,$p' build.log | head -40
+          echo '=== 마지막 20줄 ==='
+          tail -20 build.log
 
       - name: 테스트 보고서 올리기
         if: failure()

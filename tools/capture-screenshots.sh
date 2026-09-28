@@ -9,9 +9,11 @@ set -euo pipefail
 PKG=com.quoteday.app
 REMOTE="/sdcard/Android/data/$PKG/files/screenshots"
 
+# 로그를 파일로도 남긴다. 실패했을 때 워크플로가 이 파일에서 원인만 추려
+# 다시 찍어 준다 — 에뮬레이터 잡의 원본 로그는 캐시 정리 소음에 묻힌다.
 ./gradlew :app:connectedDebugAndroidTest \
   -Pandroid.testInstrumentationRunnerArguments.class=com.quoteday.app.ScreenshotTest \
-  --console=plain
+  --console=plain 2>&1 | tee build.log
 
 mkdir -p docs/screenshots
 

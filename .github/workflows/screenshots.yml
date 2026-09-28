@@ -50,6 +50,28 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           script: bash tools/capture-screenshots.sh
 
+      # 에뮬레이터 잡의 원본 로그는 캐시 정리 소음이 뒤를 다 차지해서, 실패
+      # 원인이 로그 꼬리에 남지 않는다. 필요한 줄만 마지막에 다시 찍는다.
+      - name: 실패한 곳만 추리기
+        if: failure()
+        run: |
+          echo '=== Gradle 이 말한 것 ==='
+          sed -n '/\* What went wrong:/,/^\* Try:/p' build.log 2>/dev/null \
+            | head -20 || echo '(build.log 없음)'
+          echo '=== 테스트가 말한 것 ==='
+          grep -E "FAILED|junit|Exception|at com\\.quoteday" build.log 2>/dev/null \
+            | head -40 || echo '(없음)'
+          echo '=== 컴파일 오류 ==='
+          grep -E "^e: |error:" build.log 2>/dev/null | tail -40 || echo '(없음)'
+
+      - name: 테스트 보고서 올리기
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot-test-report
+          path: app/build/reports/androidTests
+          if-no-files-found: warn
+
       - name: 산출물로 올리기
         if: always()
         uses: actions/upload-artifact@v4

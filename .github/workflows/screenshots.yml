@@ -48,16 +48,7 @@ jobs:
           profile: pixel_2
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
-          script: |
-            ./gradlew :app:connectedDebugAndroidTest \
-              -Pandroid.testInstrumentationRunnerArguments.class=com.quoteday.app.ScreenshotTest \
-              --console=plain
-            mkdir -p docs/screenshots
-            adb root || true
-            sleep 3
-            adb pull /sdcard/Android/data/com.quoteday.app/files/screenshots/. docs/screenshots/ \
-              || adb pull /storage/emulated/0/Android/data/com.quoteday.app/files/screenshots/. docs/screenshots/
-            ls -la docs/screenshots
+          script: bash tools/capture-screenshots.sh
 
       - name: 산출물로 올리기
         if: always()

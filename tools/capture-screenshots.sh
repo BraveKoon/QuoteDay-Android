@@ -11,8 +11,10 @@ set -euo pipefail
 # 원본 로그는 뒤따르는 캐시 정리 소음에 묻혀 꼬리에 원인이 남지 않는다.
 exec > >(tee build.log) 2>&1
 
-PKG=com.quoteday.app
-REMOTE="/sdcard/Android/data/$PKG/files/screenshots"
+# 앱 폴더가 아니다. connectedAndroidTest 는 끝나고 앱을 지우는데, 앱을 지우면
+# /sdcard/Android/data/<패키지> 도 같이 사라진다. 찍어 놓고 가져가기 직전에
+# 없어진다. 그래서 테스트가 셸로 /sdcard/screenshots 에 찍는다.
+REMOTE="/sdcard/screenshots"
 
 ./gradlew :app:connectedDebugAndroidTest \
   -Pandroid.testInstrumentationRunnerArguments.class=com.quoteday.app.ScreenshotTest \
@@ -23,7 +25,7 @@ echo "=== 기기에 찍힌 것 ==="
 # 다른 곳에 썼는지 가려야 한다.
 adb shell ls -l "$REMOTE" || {
   echo "(기기에 $REMOTE 가 없다)"
-  adb shell ls -l "/sdcard/Android/data/$PKG/files" || echo "(앱 외부 폴더 자체가 없다)"
+  adb shell ls -l /sdcard
 }
 
 # 폴더를 통째로 가져온다. 안에 docs/screenshots 가 생긴다.

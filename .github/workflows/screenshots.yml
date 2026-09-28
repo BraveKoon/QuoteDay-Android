@@ -1,0 +1,87 @@
+name: 스크린샷
+
+# 손으로 돌린다. 매 커밋마다 에뮬레이터를 켤 이유가 없고, 화면이 바뀌었을 때만
+# 다시 찍으면 된다.
+#
+# 찍은 그림은 docs/screenshots/ 에 커밋된다. 산출물로만 두면 90일 뒤 사라지고,
+# 스토어에 올릴 그림을 그렇게 두면 다음에 또 에뮬레이터를 켜야 한다.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  capture:
+    name: 화면 찍기
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: ''
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: KVM 열어 주기
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      # pixel_2 는 1080×1920, 정확히 9:16 이다. 플레이 콘솔이 받는 비율이고,
+      # 요즘 기기(20:9)로 찍으면 비율이 맞지 않아 거절당한다.
+      - name: 찍기
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: |
+            ./gradlew :app:connectedDebugAndroidTest \
+              -Pandroid.testInstrumentationRunnerArguments.class=com.quoteday.app.ScreenshotTest \
+              --console=plain
+            mkdir -p docs/screenshots
+            adb root || true
+            sleep 3
+            adb pull /sdcard/Android/data/com.quoteday.app/files/screenshots/. docs/screenshots/ \
+              || adb pull /storage/emulated/0/Android/data/com.quoteday.app/files/screenshots/. docs/screenshots/
+            ls -la docs/screenshots
+
+      - name: 산출물로 올리기
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quoteday-screenshots
+          path: docs/screenshots
+          if-no-files-found: warn
+
+      - name: 저장소에 커밋
+        run: |
+          if [ -z "$(ls -A docs/screenshots 2>/dev/null)" ]; then
+            echo '찍힌 그림이 없습니다.' >&2
+            exit 1
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/screenshots
+          if git diff --cached --quiet; then
+            echo '바뀐 그림이 없습니다.'
+            exit 0
+          fi
+          git commit -m '스크린샷을 다시 찍는다
+
+          에뮬레이터(pixel_2, API 34)에서 찍었다. 이 저장소에는 안드로이드 기기가
+          없어서 화면을 눈으로 볼 방법이 이것뿐이다.'
+          git push
